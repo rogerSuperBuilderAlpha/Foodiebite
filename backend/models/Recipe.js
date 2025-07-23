@@ -23,7 +23,11 @@ const RecipeSchema = new mongoose.Schema({
   instructions: String,
   cultural_context: String,
   drinks: [DrinkSchema],
-  reviews: [ReviewSchema]
+  reviews: [ReviewSchema],
+  cuisine: String,
+  prep_time: Number, // in minutes
+  difficulty: { type: String, enum: ['Easy', 'Medium', 'Hard'], default: 'Easy' },
+  experimental: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('Recipe', RecipeSchema); 
