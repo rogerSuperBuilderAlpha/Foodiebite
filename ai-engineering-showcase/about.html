@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About | Jahzeel John</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/reset.css" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+</head>
+<body>
+  <header class="header" role="banner">
+    <nav class="nav container" aria-label="Main Navigation">
+      <a class="nav__brand" href="index.html">JahzeelJohn.dev</a>
+      <ul class="nav__links">
+        <li><a class="nav__link" href="projects.html">Projects</a></li>
+        <li><a class="nav__link" href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="section" id="content" tabindex="-1">
+    <div class="container grid grid--2">
+      <figure class="center">
+        <img src="https://ui-avatars.com/api/?name=Jahzeel+John&background=2563eb&color=fff&size=360" alt="Portrait of Jahzeel John" width="360" height="360" loading="lazy" class="hero__img" />
+      </figure>
+      <section>
+        <h1 class="section__title">About Me</h1>
+        <p class="section__lead">Developer focused on performance, accessibility, and AI-driven products.</p>
+        <p class="max-w-prose">I build reliable, accessible, and scalable products. I enjoy working across the stack—from system design to elegant UI—and shipping quickly with quality.</p>
+        <div class="stack">
+          <a class="btn btn--primary" href="projects.html">See My Work</a>
+          <a class="btn" href="contact.html">Get in Touch</a>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="footer"><div class="container">© <span id="year"></span> Jahzeel John.</div></footer>
+  <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+</body>
+</html>

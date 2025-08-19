@@ -3,11 +3,15 @@ import axios from "axios";
 import RecipeFilters from "./RecipeFilters";
 import AuthForm from "./components/Auth";
 import CookieBanner from "./components/CookieBanner";
-import { BrowserRouter as Router, Route, Switch, Link, useHistory, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, Link, useHistory, useParams, Navigate } from 'react-router-dom';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import AdminDashboard from './pages/AdminDashboard';
 import { register as registerSW } from './serviceWorkerRegistration';
+import GlobalRecipeSelector from './components/GlobalRecipeSelector';
+import NutritionBenefits from './components/NutritionBenefits';
+import MealPlanner from './components/MealPlanner';
+import PhotoToMeal from './components/PhotoToMeal';
 
 const moods = ["Happy", "Sad", "Stressed", "Adventurous"];
 
@@ -537,6 +541,10 @@ export default function App() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/terms" component={Terms} />
         {user && user.isAdmin && <Route path="/admin" component={AdminDashboard} />}
+        <Route path="/global" component={GlobalRecipeSelector} />
+        <Route path="/nutrition" component={NutritionBenefits} />
+        <Route path="/meal-planner" render={() => user ? <MealPlanner user={user} /> : <Navigate to="/auth" />} />
+        <Route path="/photo-meal" render={() => user ? <PhotoToMeal user={user} /> : <Navigate to="/auth" />} />
       </Switch>
       <CookieBanner />
     </Router>

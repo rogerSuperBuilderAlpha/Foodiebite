@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Projects | Onika Peters</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/reset.css" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+</head>
+<body>
+  <header class="header" role="banner">
+    <nav class="nav container" aria-label="Main Navigation">
+      <a class="nav__brand" href="index.html">OnikaPeters.dev</a>
+      <ul class="nav__links">
+        <li><a class="nav__link" href="about.html">About</a></li>
+        <li><a class="nav__link" href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="section" id="content" tabindex="-1">
+    <div class="container">
+      <h1 class="section__title">Projects</h1>
+      <div class="projects__filters stack-sm">
+        <button class="btn" data-filter="all">All</button>
+        <button class="btn" data-filter="web">Web</button>
+        <button class="btn" data-filter="ai">AI</button>
+        <button class="btn" data-filter="tools">Tools</button>
+      </div>
+      <div class="grid grid--2" id="projectGrid">
+        <article class="card project" data-category="web">
+          <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200&auto=format&fit=crop" alt="Project One UI" loading="lazy" />
+          <h3 class="card__title">Project One</h3>
+          <p class="card__desc">Impact and tech stack.</p>
+          <div class="stack-sm"><a class="btn btn--primary" href="#">Live</a><a class="btn" href="#">Repo</a></div>
+        </article>
+        <article class="card project" data-category="ai">
+          <img src="https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?q=80&w=1200&auto=format&fit=crop" alt="AI Project" loading="lazy" />
+          <h3 class="card__title">Project Two</h3>
+          <p class="card__desc">AI ‑ performance and UX.</p>
+          <div class="stack-sm"><a class="btn btn--primary" href="#">Live</a><a class="btn" href="#">Repo</a></div>
+        </article>
+        <article class="card project" data-category="tools">
+          <img src="https://images.unsplash.com/photo-1529101091764-c3526daf38fe?q=80&w=1200&auto=format&fit=crop" alt="Developer Tool" loading="lazy" />
+          <h3 class="card__title">Project Three</h3>
+          <p class="card__desc">Developer tooling for quality.</p>
+          <div class="stack-sm"><a class="btn btn--primary" href="#">Live</a><a class="btn" href="#">Repo</a></div>
+        </article>
+        <article class="card project" data-category="web">
+          <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop" alt="Responsive app" loading="lazy" />
+          <h3 class="card__title">Project Four</h3>
+          <p class="card__desc">Responsive, accessible web app.</p>
+          <div class="stack-sm"><a class="btn btn--primary" href="#">Live</a><a class="btn" href="#">Repo</a></div>
+        </article>
+      </div>
+    </div>
+  </main>
+  <footer class="footer"><div class="container">© <span id="year"></span> Onika Peters.</div></footer>
+  <script src="assets/js/main.js" defer></script>
+  <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+</body>
+</html>

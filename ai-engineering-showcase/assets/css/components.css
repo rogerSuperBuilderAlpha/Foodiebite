@@ -1,0 +1,9 @@
+/* Component extensions */
+.header--scrolled{box-shadow:0 10px 30px rgba(2,6,23,.08)}
+.nav__link--primary{background:var(--primary);color:#fff;border:1px solid transparent}
+.nav__link--primary:hover{background:var(--primary-600)}
+.projects__filters{margin:12px 0}
+input.input,textarea.input{outline:none}
+input.input:focus,textarea.input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(37,99,235,.15)}
+.hero .btn{margin-right:6px}
+.center{text-align:center}

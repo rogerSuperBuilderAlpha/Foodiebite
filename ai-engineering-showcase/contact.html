@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contact | Jahzeel John</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/reset.css" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+</head>
+<body>
+  <header class="header" role="banner">
+    <nav class="nav container" aria-label="Main Navigation">
+      <a class="nav__brand" href="index.html">JahzeelJohn.dev</a>
+      <ul class="nav__links">
+        <li><a class="nav__link" href="about.html">About</a></li>
+        <li><a class="nav__link" href="projects.html">Projects</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="section" id="content" tabindex="-1">
+    <div class="container grid grid--2">
+      <section>
+        <h1 class="section__title">Contact</h1>
+        <p class="section__lead">I’d love to hear from you.</p>
+        <form class="card stack" id="contactForm" novalidate>
+          <label><span>Name</span><input class="input" required /></label>
+          <label><span>Email</span><input type="email" class="input" required /></label>
+          <label><span>Message</span><textarea class="input textarea" required></textarea></label>
+          <button class="btn btn--primary">Send</button>
+        </form>
+      </section>
+      <aside class="stack">
+        <a href="mailto:jahzeeljohn1@gmail.com" class="btn">jahzeeljohn1@gmail.com</a>
+        <a href="#" class="btn">GitHub</a>
+        <a href="#" class="btn">LinkedIn</a>
+        <a href="#" class="btn">Twitter</a>
+      </aside>
+    </div>
+  </main>
+  <footer class="footer"><div class="container">© <span id="year"></span> Jahzeel John.</div></footer>
+  <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+</body>
+</html>

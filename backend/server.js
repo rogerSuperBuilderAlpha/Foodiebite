@@ -13,6 +13,8 @@ const User = require('./models/User');
 const Photo = require('./models/Photo'); // <-- Uncommented
 const SupportMessage = require('./models/SupportMessage');
 const Comment = require('./models/Comment');
+const MealPlan = require('./models/MealPlan');
+const PhotoMeal = require('./models/PhotoMeal');
 
 const app = express(); // <-- Add semicolon
 
@@ -765,4 +767,146 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Secure server running on port ${PORT}`);
+}); 
+
+// Global recipe filtering by region
+app.get('/api/recipes/global/:continent', async (req, res) => {
+  try {
+    const { continent } = req.params;
+    const { cuisine, health_focus, dietary_tags } = req.query;
+    
+    let filter = { continent };
+    
+    if (cuisine) filter.cuisine = cuisine;
+    if (health_focus) filter.health_tags = { $in: [health_focus] };
+    if (dietary_tags) filter.dietary_tags = { $in: dietary_tags.split(',') };
+    
+    const recipes = await Recipe.find(filter)
+      .select('recipe_name country region cuisine image_url nutrition_benefits health_tags rating')
+      .limit(50);
+    
+    res.json(recipes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch global recipes' });
+  }
+});
+
+// Get recipes by nutrition benefits for specific demographics
+app.get('/api/recipes/nutrition/:demographic', async (req, res) => {
+  try {
+    const { demographic } = req.params;
+    const { health_focus } = req.query;
+    
+    let filter = { 'nutrition_benefits.demographic': demographic };
+    if (health_focus) filter.health_tags = { $in: [health_focus] };
+    
+    const recipes = await Recipe.find(filter)
+      .select('recipe_name image_url nutrition_benefits health_tags rating cuisine')
+      .limit(30);
+    
+    res.json(recipes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch nutrition-focused recipes' });
+  }
+});
+
+// Meal planning endpoints
+app.post('/api/meal-plans', authenticateToken, async (req, res) => {
+  try {
+    const mealPlan = new MealPlan({
+      ...req.body,
+      user: req.user.id
+    });
+    await mealPlan.save();
+    res.status(201).json(mealPlan);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to create meal plan' });
+  }
+});
+
+app.get('/api/meal-plans', authenticateToken, async (req, res) => {
+  try {
+    const mealPlans = await MealPlan.find({ user: req.user.id })
+      .populate('meals.recipe', 'recipe_name image_url cuisine')
+      .sort({ created_at: -1 });
+    res.json(mealPlans);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch meal plans' });
+  }
+});
+
+app.put('/api/meal-plans/:id', authenticateToken, async (req, res) => {
+  try {
+    const mealPlan = await MealPlan.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      req.body,
+      { new: true }
+    );
+    if (!mealPlan) return res.status(404).json({ error: 'Meal plan not found' });
+    res.json(mealPlan);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to update meal plan' });
+  }
+});
+
+// Photo-to-meal creation endpoints
+app.post('/api/photo-meals', authenticateToken, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No photo uploaded' });
+    }
+    
+    // Here you would integrate with an AI service like Google Vision API or similar
+    // For now, we'll create a placeholder response
+    const photoMeal = new PhotoMeal({
+      user: req.user.id,
+      original_photo: req.file.path,
+      status: 'processing'
+    });
+    
+    await photoMeal.save();
+    
+    // Simulate AI processing
+    setTimeout(async () => {
+      photoMeal.status = 'completed';
+      photoMeal.identified_ingredients = [
+        { name: 'tomato', confidence: 0.95, quantity: '2 medium', notes: 'Fresh red tomatoes' },
+        { name: 'basil', confidence: 0.88, quantity: '1/4 cup', notes: 'Fresh basil leaves' }
+      ];
+      photoMeal.ai_analysis = {
+        food_types: ['vegetables', 'herbs'],
+        cooking_methods: ['raw', 'fresh'],
+        cuisine_style: 'Mediterranean',
+        health_benefits: ['antioxidants', 'vitamin-c'],
+        dietary_tags: ['vegetarian', 'vegan', 'gluten-free']
+      };
+      await photoMeal.save();
+    }, 3000);
+    
+    res.status(201).json(photoMeal);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to process photo meal' });
+  }
+});
+
+app.get('/api/photo-meals', authenticateToken, async (req, res) => {
+  try {
+    const photoMeals = await PhotoMeal.find({ user: req.user.id })
+      .sort({ created_at: -1 });
+    res.json(photoMeals);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch photo meals' });
+  }
+});
+
+// Get meal prep friendly recipes
+app.get('/api/recipes/meal-prep', async (req, res) => {
+  try {
+    const recipes = await Recipe.find({ is_meal_prep_friendly: true })
+      .select('recipe_name image_url meal_plan meal_prep_duration cuisine rating')
+      .limit(30);
+    res.json(recipes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch meal prep recipes' });
+  }
 }); 
