@@ -1,13 +1,73 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const validator = require('validator');
 require('dotenv').config();
 
 const Recipe = require('./models/Recipe');
+const User = require('./models/User');
+const Photo = require('./models/Photo'); // <-- Uncommented
+const SupportMessage = require('./models/SupportMessage');
+const Comment = require('./models/Comment');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const app = express(); // <-- Add semicolon
+
+// Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'", "https://api.openweathermap.org"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 auth requests per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+});
+
+app.use(limiter);
+
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://yourdomain.com', 'https://www.yourdomain.com'] 
+    : ['http://localhost:3000'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+app.use(express.json({ limit: '10mb' }));
+
+// Environment Variables Validation
+const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    console.error(`Missing required environment variable: ${varName}`);
+    process.exit(1);
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -151,12 +211,126 @@ app.post('/api/auth/login', authLimiter, validateInput, async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
 
-mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+    // Generate token
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
-// Get all recipes
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        bio: user.bio
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Protected Routes
+app.get('/api/auth/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+app.put('/api/auth/profile', authenticateToken, validateInput, async (req, res) => {
+  try {
+    const { bio, avatar } = req.body;
+    
+    // Validate bio length
+    if (bio && bio.length > 160) {
+      return res.status(400).json({ error: 'Bio must be 160 characters or less' });
+    }
+    
+    // Validate avatar URL
+    if (avatar && !validator.isURL(avatar)) {
+      return res.status(400).json({ error: 'Invalid avatar URL' });
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { bio: validator.escape(bio), avatar },
+      { new: true }
+    ).select('-password');
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Update user avatar (profile picture)
+app.put('/api/auth/profile/avatar', authenticateToken, async (req, res) => {
+  try {
+    const { avatar } = req.body;
+    if (!avatar || !validator.isURL(avatar)) {
+      return res.status(400).json({ error: 'Invalid avatar URL' });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { avatar },
+      { new: true }
+    ).select('-password');
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update avatar' });
+  }
+});
+
+// Favorites with validation
+app.post('/api/auth/favorites/:recipeId', authenticateToken, async (req, res) => {
+  try {
+    if (!validator.isMongoId(req.params.recipeId)) {
+      return res.status(400).json({ error: 'Invalid recipe ID' });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user.isPremium && user.favorites.length >= 20) {
+      return res.status(403).json({ error: 'Upgrade to premium to save more favorites.' });
+    }
+    if (!user.favorites.includes(req.params.recipeId)) {
+      user.favorites.push(req.params.recipeId);
+      await user.save();
+    }
+    res.json({ message: 'Added to favorites' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to add to favorites' });
+  }
+});
+
+app.delete('/api/auth/favorites/:recipeId', authenticateToken, async (req, res) => {
+  try {
+    if (!validator.isMongoId(req.params.recipeId)) {
+      return res.status(400).json({ error: 'Invalid recipe ID' });
+    }
+    
+    const user = await User.findById(req.user.id);
+    user.favorites = user.favorites.filter(id => id.toString() !== req.params.recipeId);
+    await user.save();
+    res.json({ message: 'Removed from favorites' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to remove from favorites' });
+  }
+});
+
+// Advanced Search/Filters and Sorting
 app.get('/api/recipes', async (req, res) => {
   try {
     const { q, mood, dietary, ingredient, cuisine, min_prep, max_prep, difficulty, sort } = req.query;
@@ -455,6 +629,127 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
     res.json({ userCount, recipeCount, photoCount });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Support messages (help, export, delete requests)
+app.post('/api/support', async (req, res) => {
+  try {
+    const { name, email, message, type } = req.body;
+    await SupportMessage.create({ name, email, message, type });
+    res.json({ message: 'Support request received' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to submit support request' });
+  }
+});
+
+// Data export (stub) - in real app, compile user data and email or download
+app.post('/api/account/export', authenticateToken, async (req, res) => {
+  try {
+    // TODO: compile data from User, Recipe, Photo, Comments
+    res.json({ message: 'Data export requested. We will email you when ready.' });
+  } catch {
+    res.status(500).json({ error: 'Failed to request data export' });
+  }
+});
+
+// Data delete (stub) - in real app, queue deletion, grace period
+app.post('/api/account/delete', authenticateToken, async (req, res) => {
+  try {
+    // TODO: schedule account deletion per policy
+    res.json({ message: 'Account deletion requested. Our team will process it shortly.' });
+  } catch {
+    res.status(500).json({ error: 'Failed to request account deletion' });
+  }
+});
+
+// Stripe upgrade (placeholder)
+app.post('/api/premium/checkout', authenticateToken, async (req, res) => {
+  try {
+    // TODO: Create Stripe checkout session and return URL
+    res.json({ checkoutUrl: 'https://billing.stripe.com/session/test_placeholder' });
+  } catch {
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+// Comments API (edit, delete, report) – assuming Comment model created similarly
+// Create comment
+app.post('/api/comments', authenticateToken, async (req, res) => {
+  try {
+    const { content, targetType, targetId } = req.body;
+    if (!content || !targetType || !targetId) return res.status(400).json({ error: 'Missing fields' });
+    const comment = await Comment.create({ author: req.user.id, content, targetType, targetId });
+    res.status(201).json(comment);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to create comment' });
+  }
+});
+
+// List comments for a target
+app.get('/api/comments', async (req, res) => {
+  try {
+    const { targetType, targetId } = req.query;
+    if (!targetType || !targetId) return res.status(400).json({ error: 'Missing query' });
+    const comments = await Comment.find({ targetType, targetId }).populate('author', 'username avatar').sort({ createdAt: -1 });
+    res.json(comments);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+});
+
+// Update comment
+app.put('/api/comments/:id', authenticateToken, async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.id);
+    if (!comment) return res.status(404).json({ error: 'Not found' });
+    if (comment.author.toString() !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    comment.content = req.body.content ?? comment.content;
+    await comment.save();
+    res.json(comment);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to update comment' });
+  }
+});
+
+// Delete comment
+app.delete('/api/comments/:id', authenticateToken, async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.id);
+    if (!comment) return res.status(404).json({ error: 'Not found' });
+    const user = await User.findById(req.user.id);
+    if (comment.author.toString() !== req.user.id && !user.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    await comment.deleteOne();
+    res.json({ message: 'Deleted' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete comment' });
+  }
+});
+
+// Report comment
+app.post('/api/comments/:id/report', authenticateToken, async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.id);
+    if (!comment) return res.status(404).json({ error: 'Not found' });
+    comment.reported = true;
+    await comment.save();
+    res.json({ message: 'Reported' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to report comment' });
+  }
+});
+
+// Recent activity (admin)
+app.get('/api/admin/recent', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+    const recentUsers = await User.find().sort({ _id: -1 }).limit(5).select('-password');
+    const recentRecipes = await Recipe.find().sort({ _id: -1 }).limit(5);
+    const recentPhotos = await Photo.find().sort({ _id: -1 }).limit(5);
+    res.json({ recentUsers, recentRecipes, recentPhotos });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch recent activity' });
   }
 });
 

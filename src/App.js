@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import RecipeFilters from "./RecipeFilters";
 import AuthForm from "./components/Auth";
+import CookieBanner from "./components/CookieBanner";
 import { BrowserRouter as Router, Route, Switch, Link, useHistory, useParams } from 'react-router-dom';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import AdminDashboard from './pages/AdminDashboard';
+import { register as registerSW } from './serviceWorkerRegistration';
 
 const moods = ["Happy", "Sad", "Stressed", "Adventurous"];
 
@@ -306,7 +311,7 @@ function MainApp({ user, onLogout }) {
             <li key={r._id || r.name} style={{ margin: "10px 0", padding: 10, border: "1px solid #eee", borderRadius: 4, background: '#fafbfc', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
               <strong>{r.recipe_name || r.name}</strong>
               {r.image_url && (
-                <img src={r.image_url} alt={r.recipe_name} style={{ width: 50, marginLeft: 10, borderRadius: 4 }} />
+                <img src={r.image_url} alt={r.recipe_name} style={{ width: 50, marginLeft: 10, borderRadius: 4 }} loading="lazy" />
               )}
               <div>
                 {r.dietary_tags && r.dietary_tags.length > 0 && (
@@ -373,7 +378,7 @@ function MainApp({ user, onLogout }) {
             <li key={r._id || r.name} style={{ background: '#f0f4fa', borderRadius: 4, padding: 8, minWidth: 120, display: 'flex', alignItems: 'center' }}>
               <strong>{r.recipe_name || r.name}</strong>
               {r.image_url && (
-                <img src={r.image_url} alt={r.recipe_name} style={{ width: 40, marginLeft: 10, borderRadius: 4 }} />
+                <img src={r.image_url} alt={r.recipe_name} style={{ width: 40, marginLeft: 10, borderRadius: 4 }} loading="lazy" />
               )}
             </li>
           ))}
@@ -529,7 +534,11 @@ export default function App() {
         <Route path="/edit/:id" render={() => user ? <RecipeEditPage user={user} /> : <AuthPage onAuthSuccess={handleAuthSuccess} />} />
         <Route path="/profile" render={() => user ? <UserProfile user={user} onLogout={handleLogout} /> : <AuthPage onAuthSuccess={handleAuthSuccess} />} />
         <Route path="/auth" render={() => <AuthPage onAuthSuccess={handleAuthSuccess} />} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
+        {user && user.isAdmin && <Route path="/admin" component={AdminDashboard} />}
       </Switch>
+      <CookieBanner />
     </Router>
   );
 }
