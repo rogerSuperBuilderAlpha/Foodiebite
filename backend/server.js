@@ -15,6 +15,10 @@ const SupportMessage = require('./models/SupportMessage');
 const Comment = require('./models/Comment');
 const MealPlan = require('./models/MealPlan');
 const PhotoMeal = require('./models/PhotoMeal');
+const AthleteDiet = require('./models/AthleteDiet');
+const Snack = require('./models/Snack');
+const RecipeTranslation = require('./models/RecipeTranslation');
+const HealthCondition = require('./models/HealthCondition');
 
 const app = express(); // <-- Add semicolon
 
@@ -909,4 +913,283 @@ app.get('/api/recipes/meal-prep', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch meal prep recipes' });
   }
+});
+
+// ===== NEW FEATURES ENDPOINTS =====
+
+// Athlete Diet endpoints
+app.post('/api/athlete-diets', authenticateToken, async (req, res) => {
+  try {
+    const athleteDiet = new AthleteDiet({
+      ...req.body,
+      user: req.user.id
+    });
+    await athleteDiet.save();
+    res.status(201).json(athleteDiet);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to create athlete diet' });
+  }
+});
+
+app.get('/api/athlete-diets', async (req, res) => {
+  try {
+    const { sport, is_public } = req.query;
+    let query = { is_public: true };
+    
+    if (sport) query.sport = sport;
+    if (is_public !== undefined) query.is_public = is_public === 'true';
+    
+    const diets = await AthleteDiet.find(query)
+      .populate('user', 'username avatar')
+      .sort({ created_at: -1 })
+      .limit(50);
+    res.json(diets);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch athlete diets' });
+  }
+});
+
+app.get('/api/athlete-diets/:id', async (req, res) => {
+  try {
+    const diet = await AthleteDiet.findById(req.params.id)
+      .populate('user', 'username avatar bio')
+      .populate('comments');
+    if (!diet) return res.status(404).json({ error: 'Athlete diet not found' });
+    res.json(diet);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch athlete diet' });
+  }
+});
+
+// Snack endpoints
+app.post('/api/snacks', authenticateToken, upload.single('image'), async (req, res) => {
+  try {
+    const snackData = {
+      ...req.body,
+      user: req.user.id
+    };
+    
+    if (req.file) {
+      snackData.image_url = req.file.path;
+    }
+    
+    const snack = new Snack(snackData);
+    await snack.save();
+    res.status(201).json(snack);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to create snack' });
+  }
+});
+
+app.get('/api/snacks', async (req, res) => {
+  try {
+    const { category, dietary_tags, is_public } = req.query;
+    let query = { is_public: true };
+    
+    if (category) query.category = category;
+    if (dietary_tags) query.dietary_tags = { $in: dietary_tags.split(',') };
+    if (is_public !== undefined) query.is_public = is_public === 'true';
+    
+    const snacks = await Snack.find(query)
+      .populate('user', 'username avatar')
+      .sort({ average_rating: -1, created_at: -1 })
+      .limit(50);
+    res.json(snacks);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch snacks' });
+  }
+});
+
+app.get('/api/snacks/:id', async (req, res) => {
+  try {
+    const snack = await Snack.findById(req.params.id)
+      .populate('user', 'username avatar')
+      .populate('comments');
+    if (!snack) return res.status(404).json({ error: 'Snack not found' });
+    res.json(snack);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch snack' });
+  }
+});
+
+// Recipe Translation endpoints
+app.post('/api/recipe-translations', authenticateToken, async (req, res) => {
+  try {
+    const translation = new RecipeTranslation({
+      ...req.body,
+      translated_by: req.user.id
+    });
+    await translation.save();
+    res.status(201).json(translation);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to create recipe translation' });
+  }
+});
+
+app.get('/api/recipe-translations', async (req, res) => {
+  try {
+    const { language, recipe_id, status, is_public } = req.query;
+    let query = {};
+    
+    if (language) query.language = language;
+    if (recipe_id) query.original_recipe = recipe_id;
+    if (status) query.translation_status = status;
+    if (is_public !== undefined) query.is_public = is_public === 'true';
+    
+    const translations = await RecipeTranslation.find(query)
+      .populate('original_recipe', 'recipe_name image_url')
+      .populate('translated_by', 'username')
+      .sort({ created_at: -1 })
+      .limit(50);
+    res.json(translations);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch recipe translations' });
+  }
+});
+
+app.get('/api/recipe-translations/:id', async (req, res) => {
+  try {
+    const translation = await RecipeTranslation.findById(req.params.id)
+      .populate('original_recipe')
+      .populate('translated_by', 'username avatar')
+      .populate('user_ratings.user', 'username');
+    if (!translation) return res.status(404).json({ error: 'Translation not found' });
+    res.json(translation);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch translation' });
+  }
+});
+
+// Health Condition endpoints
+app.post('/api/health-conditions', authenticateToken, async (req, res) => {
+  try {
+    const healthCondition = new HealthCondition({
+      ...req.body,
+      created_by: req.user.id
+    });
+    await healthCondition.save();
+    res.status(201).json(healthCondition);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to create health condition' });
+  }
+});
+
+app.get('/api/health-conditions', async (req, res) => {
+  try {
+    const { condition_type, severity_level, is_public } = req.query;
+    let query = { is_public: true };
+    
+    if (condition_type) query.condition_type = condition_type;
+    if (severity_level) query.severity_level = severity_level;
+    if (is_public !== undefined) query.is_public = is_public === 'true';
+    
+    const conditions = await HealthCondition.find(query)
+      .populate('created_by', 'username')
+      .sort({ created_at: -1 })
+      .limit(50);
+    res.json(conditions);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch health conditions' });
+  }
+});
+
+app.get('/api/health-conditions/:id', async (req, res) => {
+  try {
+    const condition = await HealthCondition.findById(req.params.id)
+      .populate('created_by', 'username avatar')
+      .populate('verified_by', 'username');
+    if (!condition) return res.status(404).json({ error: 'Health condition not found' });
+    res.json(condition);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch health condition' });
+  }
+});
+
+// Enhanced region-based recipe selection
+app.get('/api/recipes/region/:region', async (req, res) => {
+  try {
+    const { region } = req.params;
+    const { cuisine, dietary_tags, difficulty, prep_time } = req.query;
+    
+    let query = { region: new RegExp(region, 'i') };
+    
+    if (cuisine) query.cuisine = new RegExp(cuisine, 'i');
+    if (dietary_tags) query.dietary_tags = { $in: dietary_tags.split(',') };
+    if (difficulty) query.difficulty = difficulty;
+    if (prep_time) query.prep_time = { $lte: parseInt(prep_time) };
+    
+    const recipes = await Recipe.find(query)
+      .select('recipe_name image_url cuisine region country rating review_count')
+      .sort({ rating: -1, review_count: -1 })
+      .limit(50);
+    
+    res.json(recipes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch regional recipes' });
+  }
+});
+
+// Enhanced admin permissions check
+const checkAdminPermissions = (req, res, next) => {
+  if (!req.user.isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+// Admin endpoints for new features
+app.get('/api/admin/athlete-diets', authenticateToken, checkAdminPermissions, async (req, res) => {
+  try {
+    const diets = await AthleteDiet.find()
+      .populate('user', 'username email')
+      .sort({ created_at: -1 });
+    res.json(diets);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch athlete diets' });
+  }
+});
+
+app.get('/api/admin/snacks', authenticateToken, checkAdminPermissions, async (req, res) => {
+  try {
+    const snacks = await Snack.find()
+      .populate('user', 'username email')
+      .sort({ created_at: -1 });
+    res.json(snacks);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch snacks' });
+  }
+});
+
+app.get('/api/admin/translations', authenticateToken, checkAdminPermissions, async (req, res) => {
+  try {
+    const translations = await RecipeTranslation.find()
+      .populate('original_recipe', 'recipe_name')
+      .populate('translated_by', 'username email')
+      .sort({ created_at: -1 });
+    res.json(translations);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch translations' });
+  }
+});
+
+app.get('/api/admin/health-conditions', authenticateToken, checkAdminPermissions, async (req, res) => {
+  try {
+    const conditions = await HealthCondition.find()
+      .populate('created_by', 'username email')
+      .sort({ created_at: -1 });
+    res.json(conditions);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch health conditions' });
+  }
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log('🚀 FoodieBite API is ready!');
+  console.log('📱 Mobile-optimized for iOS & Android');
+  console.log('🌍 Multi-language recipe support');
+  console.log('🏃‍♂️ Athlete diet sharing platform');
+  console.log('🍎 Health condition nutrition guidance');
+  console.log('🥨 Snack upload & discovery');
 }); 

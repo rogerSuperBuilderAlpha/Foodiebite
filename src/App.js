@@ -12,6 +12,10 @@ import GlobalRecipeSelector from './components/GlobalRecipeSelector';
 import NutritionBenefits from './components/NutritionBenefits';
 import MealPlanner from './components/MealPlanner';
 import PhotoToMeal from './components/PhotoToMeal';
+import AthleteDiet from './components/AthleteDiet';
+import Snacks from './components/Snacks';
+import HealthConditions from './components/HealthConditions';
+import RecipeTranslation from './components/RecipeTranslation';
 
 const moods = ["Happy", "Sad", "Stressed", "Adventurous"];
 
@@ -483,6 +487,14 @@ export default function App() {
           {user && (
             <>
               <Link to="/submit" style={{ textDecoration: 'none', color: '#536471' }}>Submit Recipe</Link>
+              <Link to="/athlete-diets" style={{ textDecoration: 'none', color: '#536471' }}>🏃‍♂️ Athlete Diets</Link>
+              <Link to="/snacks" style={{ textDecoration: 'none', color: '#536471' }}>🥨 Snacks</Link>
+              <Link to="/health-conditions" style={{ textDecoration: 'none', color: '#536471' }}>🍎 Health Guide</Link>
+              <Link to="/translations" style={{ textDecoration: 'none', color: '#536471' }}>🌍 Translations</Link>
+              <Link to="/global" style={{ textDecoration: 'none', color: '#536471' }}>🌎 Global Recipes</Link>
+              <Link to="/nutrition" style={{ textDecoration: 'none', color: '#536471' }}>💪 Nutrition</Link>
+              <Link to="/meal-planner" style={{ textDecoration: 'none', color: '#536471' }}>📅 Meal Planner</Link>
+              <Link to="/photo-meal" style={{ textDecoration: 'none', color: '#536471' }}>📸 Photo to Meal</Link>
               <Link to="/profile" style={{ textDecoration: 'none', color: '#536471' }}>Profile</Link>
             </>
           )}
@@ -543,6 +555,10 @@ export default function App() {
         {user && user.isAdmin && <Route path="/admin" component={AdminDashboard} />}
         <Route path="/global" component={GlobalRecipeSelector} />
         <Route path="/nutrition" component={NutritionBenefits} />
+        <Route path="/athlete-diets" component={AthleteDiet} />
+        <Route path="/snacks" component={Snacks} />
+        <Route path="/health-conditions" component={HealthConditions} />
+        <Route path="/translations" component={RecipeTranslation} />
         <Route path="/meal-planner" render={() => user ? <MealPlanner user={user} /> : <Navigate to="/auth" />} />
         <Route path="/photo-meal" render={() => user ? <PhotoToMeal user={user} /> : <Navigate to="/auth" />} />
       </Switch>
