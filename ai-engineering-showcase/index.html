@@ -36,11 +36,14 @@
     <link rel="stylesheet" href="assets/css/reset.css">
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/login.css">
     
     <!-- Preload critical resources -->
     <link rel="preload" href="assets/css/styles.css" as="style">
     <link rel="preload" href="assets/css/components.css" as="style">
+    <link rel="preload" href="assets/css/login.css" as="style">
     <link rel="preload" href="assets/js/enhanced.js" as="script">
+    <link rel="preload" href="assets/js/login.js" as="script">
     
     <title>Jahzeel John - Full Stack Developer & AI Engineer</title>
 </head>
@@ -84,6 +87,10 @@
             </div>
             
             <div class="nav__actions">
+                <button class="btn btn--outline login-btn" id="login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Sign In</span>
+                </button>
                 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark/light theme">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -934,5 +941,6 @@
     <!-- JavaScript -->
     <script src="assets/js/main.js"></script>
     <script src="assets/js/enhanced.js"></script>
+    <script src="assets/js/login.js"></script>
 </body>
 </html>
